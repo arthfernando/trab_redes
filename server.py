@@ -1,53 +1,56 @@
-from socket import AF_INET, socket, SOCK_STREAM
+import socket
 from threading import Thread
+import requests
 
 clients = {}
 addresses = {}
 
 HOST = ''
-PORT = 33000
+PORT = 7777
 BUFSIZ = 1024
 ADDR = (HOST, PORT)
-SERVER = socket(AF_INET, SOCK_STREAM)
+SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 SERVER.bind(ADDR)
 
-def accept_incoming_connections():
-    """Sets up handling for incoming clients."""
+
+
+def recebe_conexao():
+    # Trata das conexoes para o cliente
     while True:
         client, client_address = SERVER.accept()
-        print("%s:%s has connected." % client_address)
-        client.send(bytes("Greetings from the cave!"+"Now type your name and press enter!", "utf8"))
+        print("%s:%s conectou." % client_address)
+        client.send(bytes("Olá!"+"Digite seu nome e aperte ENTER!", "utf8"))
         addresses[client] = client_address
-        Thread(target=handle_client, args=(client,)).start()
+        Thread(target=gerencia_client, args=(client,)).start()
 
-def handle_client(client):  # Takes client socket as argument.
-    """Handles a single client connection."""
-    name = client.recv(BUFSIZ).decode("utf8")
-    welcome = 'Welcome %s! If you ever want to quit, type {quit} to exit.' % name
-    client.send(bytes(welcome, "utf8"))
-    msg = "%s has joined the chat!" % name
+def gerencia_client(client):  # client = socket do cliente
+    # Trata uma unica conexao
+    nome = client.recv(BUFSIZ).decode("utf8")
+    bemvindo = 'Bem-vindo %s! Quando quiser sair digite {sair}.' % nome
+    client.send(bytes(bemvindo, "utf8"))
+    msg = "%s entrou na sala!" % nome
     broadcast(bytes(msg, "utf8"))
-    clients[client] = name
+    clients[client] = nome
     while True:
         msg = client.recv(BUFSIZ)
-        if msg != bytes("{quit}", "utf8"):
-            broadcast(msg, name+": ")
+        if msg != bytes("{sair}", "utf8"):
+            broadcast(msg, nome+": ")
         else:
-            client.send(bytes("{quit}", "utf8"))
+            client.send(bytes("{sair}", "utf8"))
             client.close()
             del clients[client]
-            broadcast(bytes("%s has left the chat." % name, "utf8"))
+            broadcast(bytes("%s saiu da sala." % nome, "utf8"))
             break
 
-def broadcast(msg, prefix=""):  # prefix is for name identification.
-    """Broadcasts a message to all the clients."""
+def broadcast(msg, nome=""):
+    # Envia msg para o cliente
     for sock in clients:
-        sock.send(bytes(prefix, "utf8")+msg)
+        sock.send(bytes(nome, "utf8")+msg)
 
 if __name__ == "__main__":
-    SERVER.listen(5)  # Listens for 5 connections at max.
-    print("Waiting for connection...")
-    ACCEPT_THREAD = Thread(target=accept_incoming_connections)
-    ACCEPT_THREAD.start()  # Starts the infinite loop.
+    SERVER.listen(5)  # Escuta até 5 conexões
+    print("Aguardando conexao...")
+    ACCEPT_THREAD = Thread(target=recebe_conexao)
+    ACCEPT_THREAD.start()  # Inicia o laço
     ACCEPT_THREAD.join()
     SERVER.close()
