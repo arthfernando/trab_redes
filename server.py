@@ -1,6 +1,5 @@
 import socket
 from threading import Thread
-import requests
 
 clients = {}
 addresses = {}
