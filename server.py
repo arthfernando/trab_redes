@@ -11,10 +11,7 @@ ADDR = (HOST, PORT)
 SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 SERVER.bind(ADDR)
 
-
-
 def recebe_conexao():
-    # Trata das conexoes para o cliente
     while True:
         client, client_address = SERVER.accept()
         print("%s:%s conectou." % client_address)
@@ -22,34 +19,34 @@ def recebe_conexao():
         addresses[client] = client_address
         Thread(target=gerencia_client, args=(client,)).start()
 
-def gerencia_client(client):  # client = socket do cliente
-    # Trata uma unica conexao
+# gerencia uma conexao do cliente
+def gerencia_client(client): # socket como parametro
     nome = client.recv(BUFSIZ).decode("utf8")
-    bemvindo = 'Bem-vindo %s! Quando quiser sair digite {sair}.' % nome
-    client.send(bytes(bemvindo, "utf8"))
+    msgini = 'Bem-vindo %s! Quando quiser sair digite {sair}.' % nome
+    client.send(bytes(msgini, "utf8"))
     msg = "%s entrou na sala!" % nome
-    broadcast(bytes(msg, "utf8"))
+    envia_msg(bytes(msg, "utf8"))
     clients[client] = nome
     while True:
         msg = client.recv(BUFSIZ)
         if msg != bytes("{sair}", "utf8"):
-            broadcast(msg, nome+": ")
+            envia_msg(msg, nome+": ")
         else:
             client.send(bytes("{sair}", "utf8"))
             client.close()
             del clients[client]
-            broadcast(bytes("%s saiu da sala." % nome, "utf8"))
+            envia_msg(bytes("%s saiu da sala." % nome, "utf8"))
             break
 
-def broadcast(msg, nome=""):
-    # Envia msg para o cliente
+# envia a mensagem para o cliente
+def envia_msg(msg, nome=""):
     for sock in clients:
         sock.send(bytes(nome, "utf8")+msg)
 
 if __name__ == "__main__":
-    SERVER.listen(5)  # Escuta até 5 conexões
+    SERVER.listen(5)  # até cinco conexões
     print("Aguardando conexao...")
     ACCEPT_THREAD = Thread(target=recebe_conexao)
-    ACCEPT_THREAD.start()  # Inicia o laço
+    ACCEPT_THREAD.start()
     ACCEPT_THREAD.join()
     SERVER.close()

@@ -9,8 +9,8 @@ ADDR = (HOST, PORT)
 client_socket = socket(AF_INET, SOCK_STREAM)
 client_socket.connect(ADDR)
 
+# recebe a mensagem
 def receive():
-    # Trata recebimento de msg
     while True:
         try:
             msg = client_socket.recv(BUFSIZ).decode("utf8")
@@ -18,17 +18,17 @@ def receive():
         except OSError:  # Cliente saiu da sala.
             break
 
-def send(event=None):  # event é passado pelos binders
-    # Trata envio de msg
+# envia a mensagem
+def send(event=None):
     msg = my_msg.get()
-    my_msg.set("")  # Limpa o input
+    my_msg.set("")  # Limpa o input da mensagem
     client_socket.send(bytes(msg, "utf8"))
     if msg == "{sair}":
         client_socket.close()
         top.quit()
 
+# Fechar janela
 def on_closing(event=None):
-    # Chamada quando a janela é fechada
     my_msg.set("{sair}")
     send()
 
@@ -36,9 +36,9 @@ top = tkinter.Tk()
 top.title("Mensagem Instantânea")
 
 messages_frame = tkinter.Frame(top)
-my_msg = tkinter.StringVar()  # Para msgs a serem enviadas.
+my_msg = tkinter.StringVar()  # mensagens enviadas
 my_msg.set("Digite aqui sua mensagem.")
-scrollbar = tkinter.Scrollbar(messages_frame)  # Ver histórico de mensagens na tela.
+scrollbar = tkinter.Scrollbar(messages_frame)  # mostra mensagens na tela
 
 msg_list = tkinter.Listbox(messages_frame, height=25, width=80, yscrollcommand=scrollbar.set)
 scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
@@ -55,4 +55,4 @@ top.protocol("WM_DELETE_WINDOW", on_closing)
 
 receive_thread = Thread(target=receive)
 receive_thread.start()
-tkinter.mainloop()  # Inicia GUI
+tkinter.mainloop()  # gui
